@@ -32,7 +32,7 @@ func NewProxyRouter(
 }
 
 const (
-	OauthProtectedResourceEndpoint = "/.well-known/oauth-protected-resource"
+	OauthProtectedResourceEndpoint = "/.well-known/oauth-protected-resource/*path"
 )
 
 func (p *ProxyRouter) SetupRoutes(router gin.IRouter) {
