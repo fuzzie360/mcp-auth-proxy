@@ -96,9 +96,9 @@ func customCompose(config *fosite.Config, storage any, key any) (fosite.OAuth2Pr
 const (
 	AuthorizationEndpoint            = "/authorize"
 	AuthorizationReturnEndpoint      = "/authorize/:ar_id"
-	TokenEndpoint                    = "/token"
-	IntrospectionEndpoint            = "/introspect"
-	RegistrationEndpoint             = "/register"
+	TokenEndpoint                    = "/oauth/token"
+	IntrospectionEndpoint            = "/oauth/introspect"
+	RegistrationEndpoint             = "/oauth/register"
 	OauthAuthorizationServerEndpoint = "/.well-known/oauth-authorization-server/*path"
 	JWKSEndpoint                     = "/.well-known/jwks.json"
 )
