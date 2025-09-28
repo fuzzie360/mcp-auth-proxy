@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/blendle/zapdriver"
+    "github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	ginzap "github.com/gin-contrib/zap"
@@ -232,6 +233,7 @@ func Run(
 	authRouter.SetupRoutes(router)
 	idpRouter.SetupRoutes(router)
 	proxyRouter.SetupRoutes(router)
+	router.Use(cors.Default())
 
 	var tlsHostDetected bool
 	if autoTLS &&
