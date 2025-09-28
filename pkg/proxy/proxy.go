@@ -33,6 +33,8 @@ func NewProxyRouter(
 
 const (
 	OauthProtectedResourceEndpoint = "/.well-known/oauth-protected-resource/*path"
+	WwwAuthenticateHeader = "WWW-Authenticate"
+	WwwAuthenticateValue = "Bearer realm=\"OAuth\",resource_metadata=%s/.well-known/oauth-protected-resource"
 )
 
 func (p *ProxyRouter) SetupRoutes(router gin.IRouter) {
@@ -55,6 +57,7 @@ func (p *ProxyRouter) handleProtectedResource(c *gin.Context) {
 func (p *ProxyRouter) handleProxy(c *gin.Context) {
 	authHeader := c.Request.Header.Get("Authorization")
 	if !strings.HasPrefix(authHeader, "Bearer ") {
+		c.Header(WwwAuthenticateHeader, fmt.Sprintf(WwwAuthenticateValue, p.externalURL))
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
@@ -68,6 +71,7 @@ func (p *ProxyRouter) handleProxy(c *gin.Context) {
 	})
 
 	if err != nil || !token.Valid {
+	    c.Header(WwwAuthenticateHeader, fmt.Sprintf(WwwAuthenticateValue, p.externalURL))
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 		return
 	}
