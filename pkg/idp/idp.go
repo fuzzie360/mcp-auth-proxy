@@ -31,8 +31,6 @@ type IDPRouter struct {
 	authRouter  *auth.AuthRouter
 }
 
-const Issuer = "mcp-oauth-proxy"
-
 func NewIDPRouter(
 	repo repository.Repository,
 	privKey *rsa.PrivateKey,
@@ -51,7 +49,7 @@ func NewIDPRouter(
 		AccessTokenLifespan:            24 * time.Hour,
 		RefreshTokenLifespan:           30 * 24 * time.Hour,
 		RefreshTokenScopes:             []string{},
-		AccessTokenIssuer:              Issuer,
+		AccessTokenIssuer:              externalURL,
 		EnforcePKCE:                    false,
 		EnforcePKCEForPublicClients:    false,
 		EnablePKCEPlainChallengeMethod: true,
@@ -96,9 +94,9 @@ func customCompose(config *fosite.Config, storage any, key any) (fosite.OAuth2Pr
 const (
 	AuthorizationEndpoint            = "/authorize"
 	AuthorizationReturnEndpoint      = "/authorize/:ar_id"
-	TokenEndpoint                    = "/oauth/token"
-	IntrospectionEndpoint            = "/oauth/introspect"
-	RegistrationEndpoint             = "/oauth/register"
+	TokenEndpoint                    = "/token"
+	IntrospectionEndpoint            = "/introspect"
+	RegistrationEndpoint             = "/register"
 	OauthAuthorizationServerEndpoint = "/.well-known/oauth-authorization-server/*path"
 	JWKSEndpoint                     = "/.well-known/jwks.json"
 )
@@ -144,7 +142,7 @@ func (a *IDPRouter) handleAuthorizationReturn(c *gin.Context) {
 	for _, scope := range ar.GetRequestedScopes() {
 		ar.GrantScope(scope)
 	}
-	jwtSession, err := NewJWTSessionWithKey(Issuer, "user", a.privKey)
+	jwtSession, err := NewJWTSessionWithKey(a.externalURL, "user", a.privKey)
 	if err != nil {
 		a.logger.With(utils.Err(err)...).Error("Failed to create JWT session", zap.Error(err))
 		a.provider.WriteAuthorizeError(ctx, c.Writer, ar, err)
@@ -308,11 +306,11 @@ type authorizationServerResponse struct {
 	AuthorizationEndpoint             string   `json:"authorization_endpoint"`
 	TokenEndpoint                     string   `json:"token_endpoint"`
 	RegistrationEndpoint              string   `json:"registration_endpoint"`
-	ScopesSupported                   []string `json:"scopes_supported"`
 	ResponseTypesSupported            []string `json:"response_types_supported"`
 	ResponseModesSupported            []string `json:"response_modes_supported"`
 	GrantTypesSupported               []string `json:"grant_types_supported"`
 	TokenEndpointAuthMethodsSupported []string `json:"token_endpoint_auth_methods_supported"`
+	RevocationEndpoint                string   `json:"revocation_endpoint"`
 	CodeChallengeMethodsSupported     []string `json:"code_challenge_methods_supported"`
 }
 
@@ -337,15 +335,15 @@ func (a *IDPRouter) handleOauthAuthorizationServer(c *gin.Context) {
 	}
 
 	res := &authorizationServerResponse{
-		Issuer:                            Issuer,
+		Issuer:                            a.externalURL,
 		AuthorizationEndpoint:             authorizationEndpoint,
 		TokenEndpoint:                     tokenEndpoint,
 		RegistrationEndpoint:              registrationEndpoint,
-		ScopesSupported:                   []string{},
 		ResponseTypesSupported:            []string{"code"},
 		ResponseModesSupported:            []string{"query"},
 		GrantTypesSupported:               []string{"authorization_code", "refresh_token"},
 		TokenEndpointAuthMethodsSupported: []string{"client_secret_basic", "client_secret_post", "none"},
+		RevocationEndpoint:                tokenEndpoint,
 		CodeChallengeMethodsSupported:     []string{"plain", "S256"},
 	}
 	c.JSON(200, res)
